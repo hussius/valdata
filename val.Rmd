@@ -1,0 +1,60 @@
+Valdata
+========================================================
+
+Läser in indata som jag fick av Jens. Jag har plockat ut två kolumner ur Excelfilen till en egen textfil p g a importproblem av den kompletta filen till R. Kolumnerna används för att kategorisera varje kommun som "Landsbygd", "Stad" eller "Storstadsområde".
+
+```{r}
+load("valresultat.Rdata")
+
+kod_ <- read.delim("kommunkod_stadlandsbygd.txt",header=F,colClasses=c("character","character"))
+kod <- kod_[,2]
+names(kod) <- kod_[,1]
+
+```
+Gå in i R-objektet och plocka ut 2014 års valresultat på kommunnivå (då ID:na är desamma som i kommuninfotabellen). Det finns även på distriktsnivå men kräver förmodligen då lite mer pyssel.
+
+Jag ändrar kolumnnamnen till kortare varianter och ersätter NA-värden med nollor, eftersom jag utgår från att de representerar fall med noll röster för ett parti.  
+
+```{r}
+k <- res$kommun$val2014R
+proc <- k[,c("PROCENT_M","PROCENT_C","PROCENT_FP","PROCENT_KD","PROCENT_S","PROCENT_V","PROCENT_MP","PROCENT_SD","PROCENT_FI")]
+rownames(proc)<-k$ID
+colnames(proc)<-c("M","C","FP","KD","S","V","MP","SD","FI")
+```
+
+Vi utför PCA på matrisen och färgkodar datapunkterna enligt typ av region.
+
+```{r:pca}
+p <- prcomp(proc)
+
+regiontype <- kod[rownames(proc)]
+colvec <- rep("black", length(regiontype))
+colvec[which(regiontype=="Landsbygd")]<-"green"
+colvec[which(regiontype=="Storstadsregion")]<-"red"
+```
+
+Den första figuren är en "score plot" som visar projektioner för resp kommun på de två starkaste principalkomponenterna.
+
+```{r:scoreplot}
+plot(p$x, col=colvec, pch=20)
+legend(-40,-5,legend=c("Landsbygd","Stad","Storstadsregion"),pch=20, col=c("green","black","red"))
+```
+
+Vi ser en ganska tydlig skillnad mellan "Storstadsregion" och "Landsbygd" röstning. Vilka partier drivs denna skillnad av? Titta först på PC1 (x-axeln i vår plot):
+
+```{r:loadings}
+loading.pc1 <- p$rotation[,1]
+barplot(loading.pc1[order(loading.pc1)],las=2)
+```
+Tydligen handlar den första principalkomponenten om moderaterna vs socialdemokraterna. Inte så oväntat kanske. Positiva värden i vår score plot (punkterna på högra sidan) är förknippade med relativt många S-röster. Dessa punkter tenderar att vara landsbygdskommuner. Moderaterna har en negativ loading och kommuner som röstar mycket på M hamnar långt till vänster i scoreplotten (där vi ser storstadsregioner).
+
+```{r:loadings2}
+loading.pc2 <- p$rotation[,2]
+barplot(loading.pc2[order(loading.pc2)],las=2) # SD (+C) mot resten 
+```
+
+Den andra principalkomponenten verkar handla om SD mot resten. Intressant nog har även C en svag loading åt samma håll som SD. 
+
+Man skulle även kunna färglägga enligt en massa andra variabler ur kommuninfotabellen. 
+
+
