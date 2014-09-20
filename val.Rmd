@@ -62,8 +62,36 @@ We can visualize the loadings for PCs 1 and 2 in a scatter plot.
 ```{r:loadings12}
 loadings.1and2 <- cbind(loading.pc1,loading.pc2)
 plot(loadings.1and2, pch=".",xlim=c(-1,1),ylim=c(-1,1))
-textxy(loadings.1and2[,1],loadings.1and2[,2],labs=rownames(loadings.1and2), cex=0.6)
+textxy(loadings.1and2[,1],loadings.1and2[,2],labs=rownames(loadings.1and2), cex=1)
 ```
 
 This plot could be interpreted as supporting, to a certain extent, the idea of two political axes in Sweden, the right-left axis (in fact more of a M <--> S axis) and a perpendicular traditional-cosmopolitan axis, with SD at one end and V, FI, MP and FP at the other.
 
+Now let us look at a more detailed division into municipality types.
+
+```{r:municipalitytype}
+mtype <- komm$municipalityType
+table(mtype)
+colvec <- rep("red", length(mtype))
+colvec[which(mtype=="Förortskommuner till storstäderna")]<-"gray"
+colvec[which(mtype=="Större städer")]<-"darkblue"
+colvec[which(mtype=="Förortskommuner till större städer")]<-"blue"
+colvec[which(mtype=="Glesbygdkommuner")]<-"yellow"
+colvec[which(mtype=="Kommuner i glesbefolkad region")]<-"orange"
+colvec[which(mtype=="Kommuner i tätbefolkad region")]<-"purple"
+colvec[which(mtype=="Pendlingskommuner")]<-"brown"
+colvec[which(mtype=="Turism- och besöksnäringskommuner")]<-"green"
+colvec[which(mtype=="Varuproducerande kommuner")]<-"pink"
+plot(p$x, col=colvec, pch=20)
+names <- rep("",nrow(komm))
+right <- which(p$x[,1]==max(p$x[,1]))
+names[right] <- as.character(komm$name[right])
+left <- which(p$x[,1]==min(p$x[,1]))
+names[left] <- as.character(komm$name[left])
+top <- which(p$x[,2]==max(p$x[,2]))
+names[top] <- as.character(komm$name[top])
+bottom <- which(p$x[,2]==min(p$x[,2]))
+names[bottom] <- as.character(komm$name[bottom])
+text(p$x[,1],p$x[,2],labels=names,cex=0.8)
+legend(-45,-7,legend=unique(mtype),pch=20,col=c("darkblue","brown","yellow","green","blue","pink","orange","purple","gray","black"),cex=0.7)
+```
