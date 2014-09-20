@@ -95,3 +95,11 @@ names[bottom] <- as.character(komm$name[bottom])
 text(p$x[,1],p$x[,2],labels=names,cex=0.8)
 legend(-45,-7,legend=unique(mtype),pch=20,col=c("darkblue","brown","yellow","green","blue","pink","orange","purple","gray","black"),cex=0.7)
 ```
+
+Color by municipality rating in Fokus (a Swedish weekly publication which ranks the municipalities every year)
+
+```{r:fokus}
+plot(p$x, col = terrain.colors(n=290)[komm$fokusRanking],pch=20,main="Fokus rating (green is good, pink is bad)")
+```
+
+
