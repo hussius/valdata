@@ -1,19 +1,21 @@
-Valdata
+Swedish election data
 ========================================================
 
-Läser in indata som jag fick av Jens. Jag har plockat ut två kolumner ur Excelfilen till en egen textfil p g a importproblem av den kompletta filen till R. Kolumnerna används för att kategorisera varje kommun som "Landsbygd", "Stad" eller "Storstadsområde".
+(Data provided by Jens Finnäs)
 
-```{r}
+Load election results and data on municipalities.
+
+```{r:load-data}
+library("xlsx")
+library("pheatmap")
+library("calibrate")
 load("valresultat.Rdata")
-
-kod_ <- read.delim("kommunkod_stadlandsbygd.txt",header=F,colClasses=c("character","character"))
-kod <- kod_[,2]
-names(kod) <- kod_[,1]
+komm <- read.xlsx("kommundata.xlsx",1)
 
 ```
-Gå in i R-objektet och plocka ut 2014 års valresultat på kommunnivå (då ID:na är desamma som i kommuninfotabellen). Det finns även på distriktsnivå men kräver förmodligen då lite mer pyssel.
+Extract 2014 election results on the municipality level. There are 290 municipalities. There is more fine grained data available, but we will use those later. 
 
-Jag ändrar kolumnnamnen till kortare varianter och ersätter NA-värden med nollor, eftersom jag utgår från att de representerar fall med noll röster för ett parti.  
+Change column names to shorter ones for plotting purposes and replace NA values with zeroes, since that is what they represent in this case. 
 
 ```{r}
 k <- res$kommun$val2014R
@@ -22,39 +24,46 @@ rownames(proc)<-k$ID
 colnames(proc)<-c("M","C","FP","KD","S","V","MP","SD","FI")
 ```
 
-Vi utför PCA på matrisen och färgkodar datapunkterna enligt typ av region.
+Perform PCA on the matrix and color by municipality type.
 
 ```{r:pca}
 p <- prcomp(proc)
 
-regiontype <- kod[rownames(proc)]
+rownames(proc) == komm$code # Check that municipalities are listed in the same order
+regiontype <- komm$municipalityTypeBroad
 colvec <- rep("black", length(regiontype))
 colvec[which(regiontype=="Landsbygd")]<-"green"
 colvec[which(regiontype=="Storstadsregion")]<-"red"
 ```
 
-Den första figuren är en "score plot" som visar projektioner för resp kommun på de två starkaste principalkomponenterna.
+The first plot is a "score plot" which shows the projections of each municipality onto the two strongest principal components.
 
 ```{r:scoreplot}
 plot(p$x, col=colvec, pch=20)
 legend(-40,-5,legend=c("Landsbygd","Stad","Storstadsregion"),pch=20, col=c("green","black","red"))
 ```
-
-Vi ser en ganska tydlig skillnad mellan "Storstadsregion" och "Landsbygd" röstning. Vilka partier drivs denna skillnad av? Titta först på PC1 (x-axeln i vår plot):
+We see a fairly clear separation between "Storstadsregion" (urban) and "Landsbygd" (rural). Which parties drive this separation? Let's take a look at PC1 (the x axis in our plot) first.  
 
 ```{r:loadings}
 loading.pc1 <- p$rotation[,1]
 barplot(loading.pc1[order(loading.pc1)],las=2)
 ```
-Tydligen handlar den första principalkomponenten om moderaterna vs socialdemokraterna. Inte så oväntat kanske. Positiva värden i vår score plot (punkterna på högra sidan) är förknippade med relativt många S-röster. Dessa punkter tenderar att vara landsbygdskommuner. Moderaterna har en negativ loading och kommuner som röstar mycket på M hamnar långt till vänster i scoreplotten (där vi ser storstadsregioner).
+The first principal component seems to reflect an axis between the social democrats and the conservatives - perhaps not a big surprise. Positive loadings in the score plot above (the dots on the right hand side) are associated with a relatively high proportion of S (social democrat) votes. These tend to be rural municipalities. The moderates have a negative loading, and thus municipalities with a relatively high proprotion of M (moderate) votes will be on the left hand side in the score plot (where we see many urban regions.)
 
 ```{r:loadings2}
 loading.pc2 <- p$rotation[,2]
 barplot(loading.pc2[order(loading.pc2)],las=2) # SD (+C) mot resten 
 ```
 
-Den andra principalkomponenten verkar handla om SD mot resten. Intressant nog har även C en svag loading åt samma håll som SD. 
+The second principal component mainly emphasizes a difference between the Sweden democrats (SD) and the other parties.
 
-Man skulle även kunna färglägga enligt en massa andra variabler ur kommuninfotabellen. 
+We can visualize the loadings for PCs 1 and 2 in a scatter plot.
 
+```{r:loadings12}
+loadings.1and2 <- cbind(loading.pc1,loading.pc2)
+plot(loadings.1and2, pch=".",xlim=c(-1,1),ylim=c(-1,1))
+textxy(loadings.1and2[,1],loadings.1and2[,2],labs=rownames(loadings.1and2), cex=0.6)
+```
+
+This plot could be interpreted as supporting, to a certain extent, the idea of two political axes in Sweden, the right-left axis (in fact more of a M <--> S axis) and a perpendicular traditional-cosmopolitan axis, with SD at one end and V, FI, MP and FP at the other.
 
