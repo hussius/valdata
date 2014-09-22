@@ -60,7 +60,8 @@ Correlations between PC1 scores and municipality descriptors.
 ```{r:pc1scorecorr}
 pc1corrs <- cor(p$x[,1], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles")])
 p1 <- pc1corrs[1,]
-barplot(p1[order(p1)],las=2,cex.names=0.5,main="Municipality indicators' correlation to PC1 (right-left axis)")
+par(mar=c(10,4.1,4.1,2.1))
+barplot(p1[order(p1)],las=2,cex.names=0.9,main="Municipality indicators' correlation to PC1 (right-left axis)")
 ```
 
 
@@ -81,7 +82,8 @@ Which indicators correlate with PC2 scores?
 ```{r:pc2scorecorr}
 pc2corrs <- cor(p$x[,2], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles")])
 p2 <- pc2corrs[1,]
-barplot(p2[order(p2)],las=2,cex.names=0.5,main="Municipality indicators' correlation to PC2 (up-down axis)")
+par(mar=c(10,4.1,4.1,2.1))
+barplot(p2[order(p2)],las=2,cex.names=0.9,main="Municipality indicators' correlation to PC2 (up-down axis)")
 ```
 
 
@@ -106,7 +108,7 @@ This plot could be interpreted as supporting, to a certain extent, the idea of t
 
 If we plot the indicator correlations for PCs 1 and 2, we can get a sort of "map" of how various indicators contribute to the voting patterns.
 
-```{r:indicatormap
+```{r:indicatormap}
 plot(p1,p2,pch='.')
 text(p1,p2,labels=names(p1),cex=1)
 ```
