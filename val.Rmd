@@ -43,13 +43,31 @@ The first plot is a "score plot" which shows the projections of each municipalit
 plot(p$x, col=colvec, pch=20)
 legend(-40,-5,legend=c("Landsbygd","Stad","Storstadsregion"),pch=20, col=c("green","black","red"))
 ```
+
 We see a fairly clear separation between "Storstadsregion" (urban) and "Landsbygd" (rural). Which parties drive this separation? Let's take a look at PC1 (the x axis in our plot) first.  
 
 ```{r:loadings}
 loading.pc1 <- p$rotation[,1]
 barplot(loading.pc1[order(loading.pc1)],las=2)
 ```
+
 The first principal component seems to reflect an axis between the social democrats and the conservatives - perhaps not a big surprise. Positive loadings in the score plot above (the dots on the right hand side) are associated with a relatively high proportion of S (social democrat) votes. These tend to be rural municipalities. The moderates have a negative loading, and thus municipalities with a relatively high proprotion of M (moderate) votes will be on the left hand side in the score plot (where we see many urban regions.)
+
+Let's look at some numerical indicators for each municipality - things like median income, unemployment rate and so on. By calculating the correlations between each indicator and PC1 scores, we can get an idea about which factors are co-varying with voting patterns. We should not over-interpret the results as there is lots of collinearity and lurking variables. 
+
+Correlations between PC1 scores and municipality descriptors.
+
+```{r:pc1scorecorr}
+pc1corrs <- cor(p$x[,1], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles")])
+p1 <- pc1corrs[1,]
+barplot(p1[order(p1)],las=2,cex.names=0.5,main="Municipality indicators' correlation to PC1 (right-left axis)")
+```
+
+
+
+So the voters who favor M (left hand side in the score plot) tend to live in municipalities with high median income and high education level. The municipalities also have low unemployment and favorable rankings in the Fokus rating (low is good here).
+
+What about the second principal component? (Top-bottom scale in the score plot above)
 
 ```{r:loadings2}
 loading.pc2 <- p$rotation[,2]
@@ -57,6 +75,24 @@ barplot(loading.pc2[order(loading.pc2)],las=2)
 ```
 
 The second principal component mainly emphasizes a difference between the Sweden democrats (SD) and the other parties.
+
+Which indicators correlate with PC2 scores?
+
+```{r:pc2scorecorr}
+pc2corrs <- cor(p$x[,2], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles")])
+p2 <- pc2corrs[1,]
+barplot(p2[order(p2)],las=2,cex.names=0.5,main="Municipality indicators' correlation to PC2 (up-down axis)")
+```
+
+
+
+Latitude and longitude are the most important factors for a high PC2 score. It seems that SD voting patterns are geographically determined. For instance, northern municipalities tend to vote far less for SD. 
+
+Plot SD vote by lat/long:
+
+```{r:latlongSD}
+plot(komm$latitude, -komm$longitude, col=terrain.colors(n=30)[proc$SD],pch=20,main="SD vote % per longitude/latitute")
+```
 
 We can visualize the loadings for PCs 1 and 2 in a scatter plot.
 
@@ -68,50 +104,20 @@ textxy(loadings.1and2[,1],loadings.1and2[,2],labs=rownames(loadings.1and2), cex=
 
 This plot could be interpreted as supporting, to a certain extent, the idea of two political axes in Sweden, the right-left axis (in fact more of a M <--> S axis) and a perpendicular traditional-cosmopolitan axis, with SD at one end and V, FI, MP and FP at the other.
 
-Now let us look at a more detailed division into municipality types.
+If we plot the indicator correlations for PCs 1 and 2, we can get a sort of "map" of how various indicators contribute to the voting patterns.
 
-```{r:municipalitytype}
-mtype <- komm$municipalityType
-table(mtype)
-colvec <- rep("red", length(mtype))
-colvec[which(mtype=="Förortskommuner till storstäderna")]<-"gray"
-colvec[which(mtype=="Större städer")]<-"darkblue"
-colvec[which(mtype=="Förortskommuner till större städer")]<-"blue"
-colvec[which(mtype=="Glesbygdkommuner")]<-"yellow"
-colvec[which(mtype=="Kommuner i glesbefolkad region")]<-"orange"
-colvec[which(mtype=="Kommuner i tätbefolkad region")]<-"purple"
-colvec[which(mtype=="Pendlingskommuner")]<-"brown"
-colvec[which(mtype=="Turism- och besöksnäringskommuner")]<-"green"
-colvec[which(mtype=="Varuproducerande kommuner")]<-"pink"
-plot(p$x, col=colvec, pch=20)
-names <- rep("",nrow(komm))
-right <- which(p$x[,1]==max(p$x[,1]))
-names[right] <- as.character(komm$name[right])
-left <- which(p$x[,1]==min(p$x[,1]))
-names[left] <- as.character(komm$name[left])
-top <- which(p$x[,2]==max(p$x[,2]))
-names[top] <- as.character(komm$name[top])
-bottom <- which(p$x[,2]==min(p$x[,2]))
-names[bottom] <- as.character(komm$name[bottom])
-text(p$x[,1],p$x[,2],labels=names,cex=0.8)
-legend(-45,-7,legend=unique(mtype),pch=20,col=c("darkblue","brown","yellow","green","blue","pink","orange","purple","gray","black"),cex=0.7)
+```{r:indicatormap
+plot(p1,p2,pch='.')
+text(p1,p2,labels=names(p1),cex=1)
 ```
 
-Color by municipality rating in Fokus (a Swedish weekly publication which ranks the municipalities every year)
-
-```{r:fokus}
-plot(p$x, col = terrain.colors(n=290)[komm$fokusRanking],pch=20,main="Fokus rating (green is good, pink is bad)")
-```
-
-
+One takeaway from this plot is that the reported crime level does not seem to contribute at all to voting patterns, at least not in the simplified view that this PCA offers. 
 
 What about the factors contributing to votes for individual parties?
 
 Try a random forest model to see (a) if it can predict SD vote share per municipality based on municipality characteristics and (b) if so, which characteristics are most important for the predictions
 
 ```{r:rf}
-#komm$percChangeYouthUnempl <- 100*(komm$youthUnemployment2013-komm$youthUnemployment2010)/komm$youthUnemployment2010
-#komm$percChangeUnempl <- 100*(komm$unemployment2013-komm$unemployment2010)/komm$unemployment2010
 preds <- komm[,-c(1,2,4,6,14,15,16)]
 tr.idx <- sample(1:290, size=220)
 x.tr <- preds[tr.idx,]
@@ -130,15 +136,11 @@ barplot(r$importance[,1],las=2,cex.names=0.8,main="RF feature importance, SD vot
 
 This model is estimated to explain about 71% of the variance.
 
-Surprisingly (?), latitude and longitude are shown as the most important features. Plot SD vote by lat/long:
-
-```{r:latlongSD}
-plot(komm$latitude, -komm$longitude, col=terrain.colors(n=30)[proc$SD],pch=20,main="SD vote % per longitude/latitute")
-```
+Unsurprisingly given the results discussed above, latitude and longitude are shown as the most important features for predicting SD vote share. 
 
 Variable importance for other parties:
 
-C: Explained variance about 60%, proportion of tractors and degree of urbanness considered most important features.
+C: Explained variance about 60%, proportion of tractors and degree of urbanness considered most important features. Of course, the former is probably a consequence of the latter. 
 
 
 ```{r:C-rf}
@@ -158,4 +160,7 @@ r <- randomForest(x.tr, y=y.tr, importance=TRUE)
 guess <- predict(r, newdata=x.te)
 barplot(r$importance[,1],las=2,cex.names=0.8,main="RF feature importance, MP vote %")
 ```
+
+
+
 
