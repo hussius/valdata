@@ -9,6 +9,7 @@ Load election results and data on municipalities.
 library("xlsx")
 library("pheatmap")
 library("calibrate")
+library("randomForest")
 load("valresultat.Rdata")
 komm <- read.xlsx("kommundata.xlsx",1)
 
@@ -29,7 +30,7 @@ Perform PCA on the matrix and color by municipality type.
 ```{r:pca}
 p <- prcomp(proc)
 
-rownames(proc) == komm$code # Check that municipalities are listed in the same order
+stopifnot(rownames(proc) == komm$code) # Check that municipalities are listed in the same order
 regiontype <- komm$municipalityTypeBroad
 colvec <- rep("black", length(regiontype))
 colvec[which(regiontype=="Landsbygd")]<-"green"
@@ -52,7 +53,7 @@ The first principal component seems to reflect an axis between the social democr
 
 ```{r:loadings2}
 loading.pc2 <- p$rotation[,2]
-barplot(loading.pc2[order(loading.pc2)],las=2) # SD (+C) mot resten 
+barplot(loading.pc2[order(loading.pc2)],las=2) 
 ```
 
 The second principal component mainly emphasizes a difference between the Sweden democrats (SD) and the other parties.
@@ -102,4 +103,59 @@ Color by municipality rating in Fokus (a Swedish weekly publication which ranks 
 plot(p$x, col = terrain.colors(n=290)[komm$fokusRanking],pch=20,main="Fokus rating (green is good, pink is bad)")
 ```
 
+
+
+What about the factors contributing to votes for individual parties?
+
+Try a random forest model to see (a) if it can predict SD vote share per municipality based on municipality characteristics and (b) if so, which characteristics are most important for the predictions
+
+```{r:rf}
+#komm$percChangeYouthUnempl <- 100*(komm$youthUnemployment2013-komm$youthUnemployment2010)/komm$youthUnemployment2010
+#komm$percChangeUnempl <- 100*(komm$unemployment2013-komm$unemployment2010)/komm$unemployment2010
+preds <- komm[,-c(1,2,4,6,14,15,16)]
+tr.idx <- sample(1:290, size=220)
+x.tr <- preds[tr.idx,]
+y.tr <- proc$SD[tr.idx]
+te.idx <- setdiff(1:290, tr.idx)
+x.te <- preds[te.idx,]
+y.te <- proc$SD[te.idx]
+r <- randomForest(x.tr, y=y.tr, importance=TRUE)
+guess <- predict(r, newdata=x.te)
+plot(guess, y.te, pch=".",xlab="RandomForest prediction (unseen data)",ylab="Actual",main="SD vote % per municipality")
+text(guess, y.te, labels=komm$name[te.idx], cex=0.8)
+plot(r$predicted, y.tr, pch=".",xlab="RandomForest prediction (training data)",ylab="Actual",, main="SD % (on training data: biased & just for reference)")
+text(r$predicted, y.tr, labels=komm$name[tr.idx], cex=0.6)
+barplot(r$importance[,1],las=2,cex.names=0.8,main="RF feature importance, SD vote %")
+```
+
+This model is estimated to explain about 71% of the variance.
+
+Surprisingly (?), latitude and longitude are shown as the most important features. Plot SD vote by lat/long:
+
+```{r:latlongSD}
+plot(komm$latitude, -komm$longitude, col=terrain.colors(n=30)[proc$SD],pch=20,main="SD vote % per longitude/latitute")
+```
+
+Variable importance for other parties:
+
+C: Explained variance about 60%, proportion of tractors and degree of urbanness considered most important features.
+
+
+```{r:C-rf}
+y.tr <- proc$C[tr.idx]
+y.te <- proc$C[te.idx]
+r <- randomForest(x.tr, y=y.tr, importance=TRUE)
+guess <- predict(r, newdata=x.te)
+barplot(r$importance[,1],las=2,cex.names=0.8,main="RF feature importance, C vote %")
+```
+
+MP: about 67% explained variance, Fokus ranking most important feature followed by education level.
+
+```{r:MP-rf}
+y.tr <- proc$MP[tr.idx]
+y.te <- proc$MP[te.idx]
+r <- randomForest(x.tr, y=y.tr, importance=TRUE)
+guess <- predict(r, newdata=x.te)
+barplot(r$importance[,1],las=2,cex.names=0.8,main="RF feature importance, MP vote %")
+```
 
