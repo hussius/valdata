@@ -35,8 +35,20 @@ library("randomForest")
 
 ```r
 load("valresultat.Rdata")
-komm <- read.xlsx("kommundata.xlsx",1)
+kommun <- read.xlsx("kommundata.xlsx",1)
 ```
+
+(Added 2015-01-03: Figures on number of asylum seekers added)
+
+```r
+asyl <- read.xlsx("asylsdochm.xlsx",1)
+as <- asyl[3:nrow(asyl),c(2,5)]
+seekers <- as.numeric(as.character(as[,2]))
+as[,2] <- seekers
+colnames(as)<-c("Municipality","AsylumSeekers")
+komm <- merge(x=kommun, y=as, by.x="name", by.y="Municipality")
+```
+
 Extract 2014 election results on the municipality level. There are 290 municipalities. There is more fine grained data available, but we will use those later. 
 
 Change column names to shorter ones for plotting purposes and replace NA values with zeroes, since that is what they represent in this case. 
@@ -47,6 +59,7 @@ k <- res$kommun$val2014R
 proc <- k[,c("PROCENT_M","PROCENT_C","PROCENT_FP","PROCENT_KD","PROCENT_S","PROCENT_V","PROCENT_MP","PROCENT_SD","PROCENT_FI")]
 rownames(proc)<-k$ID
 colnames(proc)<-c("M","C","FP","KD","S","V","MP","SD","FI")
+proc <- proc[as.character(komm$code),]
 ```
 
 Perform PCA on the matrix and color by municipality type.
@@ -70,7 +83,7 @@ plot(p$x, col=colvec, pch=20)
 legend(-40,-5,legend=c("Landsbygd","Stad","Storstadsregion"),pch=20, col=c("green","black","red"))
 ```
 
-![plot of chunk :scoreplot](figure/:scoreplot.png) 
+![plot of chunk :scoreplot](figure/:scoreplot-1.png) 
 
 We see a fairly clear separation between "Storstadsregion" (urban) and "Landsbygd" (rural). Which parties drive this separation? Let's take a look at PC1 (the x axis in our plot) first.  
 
@@ -80,7 +93,7 @@ loading.pc1 <- p$rotation[,1]
 barplot(loading.pc1[order(loading.pc1)],las=2)
 ```
 
-![plot of chunk :loadings](figure/:loadings.png) 
+![plot of chunk :loadings](figure/:loadings-1.png) 
 
 The first principal component seems to reflect an axis between the social democrats and the conservatives - perhaps not a big surprise. Positive loadings in the score plot above (the dots on the right hand side) are associated with a relatively high proportion of S (social democrat) votes. These tend to be rural municipalities. The moderates have a negative loading, and thus municipalities with a relatively high proprotion of M (moderate) votes will be on the left hand side in the score plot (where we see many urban regions.)
 
@@ -90,13 +103,13 @@ Correlations between PC1 scores and municipality descriptors.
 
 
 ```r
-pc1corrs <- cor(p$x[,1], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles")])
+pc1corrs <- cor(p$x[,1], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles","AsylumSeekers")])
 p1 <- pc1corrs[1,]
 par(mar=c(10,4.1,4.1,2.1))
 barplot(p1[order(p1)],las=2,cex.names=0.9,main="Municipality indicators' correlation to PC1 (right-left axis)")
 ```
 
-![plot of chunk :pc1scorecorr](figure/:pc1scorecorr.png) 
+![plot of chunk :pc1scorecorr](figure/:pc1scorecorr-1.png) 
 
 
 
@@ -110,7 +123,7 @@ loading.pc2 <- p$rotation[,2]
 barplot(loading.pc2[order(loading.pc2)],las=2) 
 ```
 
-![plot of chunk :loadings2](figure/:loadings2.png) 
+![plot of chunk :loadings2](figure/:loadings2-1.png) 
 
 The second principal component mainly emphasizes a difference between the Sweden democrats (SD) and the other parties.
 
@@ -118,13 +131,13 @@ Which indicators correlate with PC2 scores?
 
 
 ```r
-pc2corrs <- cor(p$x[,2], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles")])
+pc2corrs <- cor(p$x[,2], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles","AsylumSeekers")])
 p2 <- pc2corrs[1,]
 par(mar=c(10,4.1,4.1,2.1))
 barplot(p2[order(p2)],las=2,cex.names=0.9,main="Municipality indicators' correlation to PC2 (up-down axis)")
 ```
 
-![plot of chunk :pc2scorecorr](figure/:pc2scorecorr.png) 
+![plot of chunk :pc2scorecorr](figure/:pc2scorecorr-1.png) 
 
 
 
@@ -137,7 +150,7 @@ Plot SD vote by lat/long:
 plot(komm$latitude, -komm$longitude, col=terrain.colors(n=30)[proc$SD],pch=20,main="SD vote % per longitude/latitute")
 ```
 
-![plot of chunk :latlongSD](figure/:latlongSD.png) 
+![plot of chunk :latlongSD](figure/:latlongSD-1.png) 
 
 We can visualize the loadings for PCs 1 and 2 in a scatter plot.
 
@@ -148,7 +161,7 @@ plot(loadings.1and2, pch=".",xlim=c(-1,1),ylim=c(-1,1))
 textxy(loadings.1and2[,1],loadings.1and2[,2],labs=rownames(loadings.1and2), cex=1)
 ```
 
-![plot of chunk :loadings12](figure/:loadings12.png) 
+![plot of chunk :loadings12](figure/:loadings12-1.png) 
 
 This plot could be interpreted as supporting, to a certain extent, the idea of two political axes in Sweden, the right-left axis (in fact more of a M <--> S axis) and a perpendicular traditional-cosmopolitan axis, with SD at one end and V, FI, MP and FP at the other.
 
@@ -160,7 +173,7 @@ plot(p1,p2,pch='.')
 text(p1,p2,labels=names(p1),cex=1)
 ```
 
-![plot of chunk :indicatormap](figure/:indicatormap.png) 
+![plot of chunk :indicatormap](figure/:indicatormap-1.png) 
 
 One takeaway from this plot is that the reported crime level does not seem to contribute at all to voting patterns, at least not in the simplified view that this PCA offers. 
 
@@ -183,20 +196,20 @@ plot(guess, y.te, pch=".",xlab="RandomForest prediction (unseen data)",ylab="Act
 text(guess, y.te, labels=komm$name[te.idx], cex=0.8)
 ```
 
-![plot of chunk :rf](figure/:rf1.png) 
+![plot of chunk :rf](figure/:rf-1.png) 
 
 ```r
 plot(r$predicted, y.tr, pch=".",xlab="RandomForest prediction (training data)",ylab="Actual",, main="SD % (on training data: biased & just for reference)")
 text(r$predicted, y.tr, labels=komm$name[tr.idx], cex=0.6)
 ```
 
-![plot of chunk :rf](figure/:rf2.png) 
+![plot of chunk :rf](figure/:rf-2.png) 
 
 ```r
 barplot(r$importance[,1],las=2,cex.names=0.8,main="RF feature importance, SD vote %")
 ```
 
-![plot of chunk :rf](figure/:rf3.png) 
+![plot of chunk :rf](figure/:rf-3.png) 
 
 This model is estimated to explain about 71% of the variance.
 
@@ -216,7 +229,7 @@ guess <- predict(r, newdata=x.te)
 barplot(r$importance[,1],las=2,cex.names=0.8,main="RF feature importance, C vote %")
 ```
 
-![plot of chunk :C-rf](figure/:C-rf.png) 
+![plot of chunk :C-rf](figure/:C-rf-1.png) 
 
 MP: about 67% explained variance, Fokus ranking most important feature followed by education level.
 
@@ -229,4 +242,8 @@ guess <- predict(r, newdata=x.te)
 barplot(r$importance[,1],las=2,cex.names=0.8,main="RF feature importance, MP vote %")
 ```
 
-![plot of chunk :MP-rf](figure/:MP-rf.png)
+![plot of chunk :MP-rf](figure/:MP-rf-1.png) 
+
+
+
+
