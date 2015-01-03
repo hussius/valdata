@@ -11,9 +11,19 @@ library("pheatmap")
 library("calibrate")
 library("randomForest")
 load("valresultat.Rdata")
-komm <- read.xlsx("kommundata.xlsx",1)
-
+kommun <- read.xlsx("kommundata.xlsx",1)
 ```
+
+(Added 2015-01-03: Figures on number of asylum seekers added)
+```{r}
+asyl <- read.xlsx("asylsdochm.xlsx",1)
+as <- asyl[3:nrow(asyl),c(2,5)]
+seekers <- as.numeric(as.character(as[,2]))
+as[,2] <- seekers
+colnames(as)<-c("Municipality","AsylumSeekers")
+komm <- merge(x=kommun, y=as, by.x="name", by.y="Municipality")
+```
+
 Extract 2014 election results on the municipality level. There are 290 municipalities. There is more fine grained data available, but we will use those later. 
 
 Change column names to shorter ones for plotting purposes and replace NA values with zeroes, since that is what they represent in this case. 
@@ -23,6 +33,7 @@ k <- res$kommun$val2014R
 proc <- k[,c("PROCENT_M","PROCENT_C","PROCENT_FP","PROCENT_KD","PROCENT_S","PROCENT_V","PROCENT_MP","PROCENT_SD","PROCENT_FI")]
 rownames(proc)<-k$ID
 colnames(proc)<-c("M","C","FP","KD","S","V","MP","SD","FI")
+proc <- proc[as.character(komm$code),]
 ```
 
 Perform PCA on the matrix and color by municipality type.
@@ -58,7 +69,7 @@ Let's look at some numerical indicators for each municipality - things like medi
 Correlations between PC1 scores and municipality descriptors.
 
 ```{r:pc1scorecorr}
-pc1corrs <- cor(p$x[,1], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles")])
+pc1corrs <- cor(p$x[,1], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles","AsylumSeekers")])
 p1 <- pc1corrs[1,]
 par(mar=c(10,4.1,4.1,2.1))
 barplot(p1[order(p1)],las=2,cex.names=0.9,main="Municipality indicators' correlation to PC1 (right-left axis)")
@@ -80,7 +91,7 @@ The second principal component mainly emphasizes a difference between the Sweden
 Which indicators correlate with PC2 scores?
 
 ```{r:pc2scorecorr}
-pc2corrs <- cor(p$x[,2], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles")])
+pc2corrs <- cor(p$x[,2], komm[,c("medianIncome","youthUnemployment2013","unemploymentChange","reportedCrime","populationChange","populationChange","hasEducation","asylumCosts","urbanDegree","foreignBorn","reportedCrimeVandalism","youngUnskilled","latitude","longitude","population","populationShare65plus","refugees","rentalApartments","fokusRanking","foretagsklimatRanking","cars","motorcycles","tractors","snowmobiles","AsylumSeekers")])
 p2 <- pc2corrs[1,]
 par(mar=c(10,4.1,4.1,2.1))
 barplot(p2[order(p2)],las=2,cex.names=0.9,main="Municipality indicators' correlation to PC2 (up-down axis)")
